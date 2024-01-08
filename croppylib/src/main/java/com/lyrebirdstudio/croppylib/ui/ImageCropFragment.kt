@@ -43,6 +43,16 @@ class ImageCropFragment : Fragment() {
             binding.recyclerViewAspectRatios.excludeAspectRatio(*it.excludedAspectRatios.toTypedArray())
         }
 
+        binding.hFlip.setOnClickListener {
+            binding.cropView.hFlip = !binding.cropView.hFlip
+        }
+        binding.vFlip.setOnClickListener {
+            binding.cropView.vFlip = !binding.cropView.vFlip
+        }
+        binding.rotate.setOnClickListener {
+            binding.cropView.rotate = 90F
+        }
+
         binding.recyclerViewAspectRatios.setItemSelectedListener {
             binding.cropView.setAspectRatio(it.aspectRatioItem.aspectRatio)
             viewModel.onAspectRatioChanged(it.aspectRatioItem.aspectRatio)

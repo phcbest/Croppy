@@ -45,9 +45,9 @@ class MainActivity : AppCompatActivity() {
     private fun startCroppy() {
         val uri = Uri.Builder()
             .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-            .authority(resources.getResourcePackageName(R.drawable.aa))
-            .appendPath(resources.getResourceTypeName(R.drawable.aa))
-            .appendPath(resources.getResourceEntryName(R.drawable.aa))
+            .authority(resources.getResourcePackageName(R.drawable.cf))
+            .appendPath(resources.getResourceTypeName(R.drawable.cf))
+            .appendPath(resources.getResourceEntryName(R.drawable.cf))
             .build()
 
         //Saves to external and return uri

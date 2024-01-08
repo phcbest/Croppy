@@ -32,6 +32,32 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/rotate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="rotate" />
+
+                        <Button
+                            android:id="@+id/hFlip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="12dp"
+                            android:text="hFlip" />
+
+                        <Button
+                            android:id="@+id/vFlip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="vFlip" />
+                    </LinearLayout>
+
                     <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="?attr/actionBarSize">
@@ -80,6 +106,7 @@
                                 android:textColor="@color/white"
                                 android:textStyle="bold" />
 
+
                         </LinearLayout>
 
                         <androidx.appcompat.widget.AppCompatImageView
@@ -105,7 +132,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_above="@+id/recyclerViewAspectRatios"
-                android:layout_marginTop="?attr/actionBarSize" />
+                android:layout_below="@id/appBarLayout" />
 
             <com.lyrebirdstudio.aspectratiorecyclerviewlib.aspectratio.AspectRatioRecyclerView
                 android:id="@+id/recyclerViewAspectRatios"

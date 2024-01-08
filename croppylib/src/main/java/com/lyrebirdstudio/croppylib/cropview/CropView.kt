@@ -15,6 +15,7 @@ import com.lyrebirdstudio.croppylib.util.model.DraggingState.DraggingEdge
 import com.lyrebirdstudio.croppylib.util.model.Edge.*
 import kotlin.math.max
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.lyrebirdstudio.aspectratiorecyclerviewlib.aspectratio.model.AspectRatio.*
 import com.lyrebirdstudio.croppylib.ui.CroppedBitmapData
@@ -23,15 +24,34 @@ import com.lyrebirdstudio.croppylib.main.CroppyTheme
 import com.lyrebirdstudio.croppylib.util.extensions.*
 import com.lyrebirdstudio.croppylib.util.model.*
 import java.lang.IllegalStateException
+import kotlin.math.absoluteValue
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.roundToInt
+
+private const val TAG = "CropView"
 
 class CropView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
+    var rotate = 0F
+        set(value) {
+            field = value
+        }
+    var hFlip = false
+        set(value) {
+            field = value
+            bitmapMatrix.postScale(-1f, 1f, cropRect.centerX(), cropRect.centerY())
+            invalidate()
+        }
+    var vFlip = false
+        set(value) {
+            field = value
+            bitmapMatrix.postScale(1f, -1f, cropRect.centerX(), cropRect.centerY())
+            invalidate()
+        }
 
     var onInitialized: (() -> Unit)? = null
 
@@ -325,6 +345,7 @@ class CropView @JvmOverloads constructor(
                 calculateMinRect()
                 calculateMaxRect()
             }
+
             ACTION_MOVE -> {
                 when (val state = draggingState) {
                     is DraggingCorner -> {
@@ -333,6 +354,7 @@ class CropView @JvmOverloads constructor(
                         updateExceedMinBorders()
                         notifyCropRectChanged()
                     }
+
                     is DraggingEdge -> {
                         onEdgePositionChanged(state.edge, event)
                         updateExceedMaxBorders()
@@ -341,6 +363,7 @@ class CropView @JvmOverloads constructor(
                     }
                 }
             }
+
             ACTION_UP -> {
                 minRect.setEmpty()
                 maxRect.setEmpty()
@@ -667,6 +690,7 @@ class CropView @JvmOverloads constructor(
                 cropWidth = viewWidth
                 cropHeight = heightRatio * viewWidth / widthRatio
             }
+
             else -> {
                 cropHeight = viewHeight
                 cropWidth = widthRatio * viewHeight / heightRatio
@@ -752,21 +776,26 @@ class CropView @JvmOverloads constructor(
                         cropRect.setTop(motionEvent.y)
                         cropRect.setRight(motionEvent.x)
                     }
+
                     TOP_LEFT -> {
                         cropRect.setTop(motionEvent.y)
                         cropRect.setLeft(motionEvent.x)
                     }
+
                     BOTTOM_RIGHT -> {
                         cropRect.setBottom(motionEvent.y)
                         cropRect.setRight(motionEvent.x)
                     }
+
                     BOTTOM_LEFT -> {
                         cropRect.setBottom(motionEvent.y)
                         cropRect.setLeft(motionEvent.x)
                     }
+
                     else -> return
                 }
             }
+
             ASPECT -> {
                 when (corner) {
                     TOP_RIGHT -> {
@@ -787,6 +816,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setTop(cropRect.top + differenceHeight)
                         cropRect.setRight(cropRect.right - differenceWidth)
                     }
+
                     TOP_LEFT -> {
 
                         if (motionEvent.y > minRect.top && motionEvent.x > minRect.left) {
@@ -805,6 +835,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setTop(cropRect.top + differenceHeight)
                         cropRect.setLeft(cropRect.left + differenceWidth)
                     }
+
                     BOTTOM_RIGHT -> {
                         if (motionEvent.y < minRect.bottom && motionEvent.x < minRect.right) {
                             return
@@ -822,6 +853,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setBottom(cropRect.bottom - differenceHeight)
                         cropRect.setRight(cropRect.right - differenceWidth)
                     }
+
                     BOTTOM_LEFT -> {
 
                         if (motionEvent.y < minRect.bottom && motionEvent.x > minRect.left) {
@@ -840,6 +872,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setBottom(cropRect.bottom - differenceHeight)
                         cropRect.setLeft(cropRect.left + differenceWidth)
                     }
+
                     else -> return
                 }
             }
@@ -866,6 +899,7 @@ class CropView @JvmOverloads constructor(
                     else -> return
                 }
             }
+
             ASPECT -> {
                 when (edge) {
                     LEFT -> {
@@ -876,6 +910,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setTop(cropRect.top + differenceHeight / 2f)
                         cropRect.setBottom(cropRect.bottom - differenceHeight / 2f)
                     }
+
                     TOP -> {
                         val differenceHeight = motionEvent.y - cropRect.top
                         val differenceWidth =
@@ -884,6 +919,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setLeft(cropRect.left + differenceWidth / 2f)
                         cropRect.setRight(cropRect.right - differenceWidth / 2f)
                     }
+
                     RIGHT -> {
                         val differenceWidth = cropRect.right - motionEvent.x
                         val differenceHeight =
@@ -892,6 +928,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setTop(cropRect.top + differenceHeight / 2f)
                         cropRect.setBottom(cropRect.bottom - differenceHeight / 2f)
                     }
+
                     BOTTOM -> {
                         val differenceHeight = cropRect.bottom - motionEvent.y
                         val differenceWidth =
@@ -900,6 +937,7 @@ class CropView @JvmOverloads constructor(
                         cropRect.setLeft(cropRect.left + differenceWidth / 2f)
                         cropRect.setRight(cropRect.right - differenceWidth / 2f)
                     }
+
                     else -> return
                 }
             }
@@ -928,18 +966,21 @@ class CropView @JvmOverloads constructor(
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             TOP -> minRect.set(
                                 cropRect.left,
                                 cropRect.bottom - minSize,
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             RIGHT -> minRect.set(
                                 cropRect.left,
                                 cropRect.top,
                                 cropRect.left + minSize,
                                 cropRect.bottom
                             )
+
                             BOTTOM -> minRect.set(
                                 cropRect.left,
                                 cropRect.top,
@@ -948,6 +989,7 @@ class CropView @JvmOverloads constructor(
                             )
                         }
                     }
+
                     is DraggingCorner -> {
                         when (state.corner) {
                             TOP_RIGHT -> minRect.set(
@@ -956,18 +998,21 @@ class CropView @JvmOverloads constructor(
                                 cropRect.left + minSize,
                                 cropRect.bottom
                             )
+
                             TOP_LEFT -> minRect.set(
                                 cropRect.right - minSize,
                                 cropRect.bottom - minSize,
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             BOTTOM_RIGHT -> minRect.set(
                                 cropRect.left,
                                 cropRect.top,
                                 cropRect.left + minSize,
                                 cropRect.top + minSize
                             )
+
                             BOTTOM_LEFT -> minRect.set(
                                 cropRect.right - minSize,
                                 cropRect.top,
@@ -978,6 +1023,7 @@ class CropView @JvmOverloads constructor(
                     }
                 }
             }
+
             ASPECT -> {
                 val scaleWidth = minSize / cropRect.width()
                 val scaleHeight = minSize / cropRect.height()
@@ -993,18 +1039,21 @@ class CropView @JvmOverloads constructor(
                                 cropRect.right,
                                 cropRect.centerY()
                             )
+
                             TOP -> matrix.setScale(
                                 scale,
                                 scale,
                                 cropRect.centerX(),
                                 cropRect.bottom
                             )
+
                             RIGHT -> matrix.setScale(
                                 scale,
                                 scale,
                                 cropRect.left,
                                 cropRect.centerY()
                             )
+
                             BOTTOM -> matrix.setScale(
                                 scale,
                                 scale,
@@ -1014,6 +1063,7 @@ class CropView @JvmOverloads constructor(
                         }
                         matrix.mapRect(minRect, cropRect)
                     }
+
                     is DraggingCorner -> {
                         val matrix = Matrix()
                         when (state.corner) {
@@ -1023,18 +1073,21 @@ class CropView @JvmOverloads constructor(
                                 cropRect.left,
                                 cropRect.bottom
                             )
+
                             TOP_LEFT -> matrix.setScale(
                                 scale,
                                 scale,
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             BOTTOM_RIGHT -> matrix.setScale(
                                 scale,
                                 scale,
                                 cropRect.left,
                                 cropRect.top
                             )
+
                             BOTTOM_LEFT -> matrix.setScale(
                                 scale,
                                 scale,
@@ -1074,18 +1127,21 @@ class CropView @JvmOverloads constructor(
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             TOP -> maxRect.set(
                                 cropRect.left,
                                 borderRect.top,
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             RIGHT -> maxRect.set(
                                 cropRect.left,
                                 cropRect.top,
                                 borderRect.right,
                                 cropRect.bottom
                             )
+
                             BOTTOM -> maxRect.set(
                                 cropRect.left,
                                 cropRect.top,
@@ -1094,6 +1150,7 @@ class CropView @JvmOverloads constructor(
                             )
                         }
                     }
+
                     is DraggingCorner -> {
                         when (state.corner) {
                             TOP_RIGHT -> maxRect.set(
@@ -1102,18 +1159,21 @@ class CropView @JvmOverloads constructor(
                                 borderRect.right,
                                 cropRect.bottom
                             )
+
                             TOP_LEFT -> maxRect.set(
                                 borderRect.left,
                                 borderRect.top,
                                 cropRect.right,
                                 cropRect.bottom
                             )
+
                             BOTTOM_RIGHT -> maxRect.set(
                                 cropRect.left,
                                 cropRect.top,
                                 borderRect.right,
                                 borderRect.bottom
                             )
+
                             BOTTOM_LEFT -> maxRect.set(
                                 borderRect.left,
                                 cropRect.top,
@@ -1125,6 +1185,7 @@ class CropView @JvmOverloads constructor(
                 }
 
             }
+
             ASPECT -> {
                 val borderRect = RectF().apply {
                     val bitmapBorderRect = RectF()
@@ -1159,6 +1220,7 @@ class CropView @JvmOverloads constructor(
                                 )
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             TOP -> {
                                 topScale = (cropRect.bottom - borderRect.top) / cropRect.height()
                                 val minScale = min(topScale, min(leftScale, rightScale))
@@ -1171,6 +1233,7 @@ class CropView @JvmOverloads constructor(
                                 )
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             RIGHT -> {
                                 rightScale = (borderRect.right - cropRect.left) / cropRect.width()
                                 val minScale = min(rightScale, min(topScale, bottomScale))
@@ -1183,6 +1246,7 @@ class CropView @JvmOverloads constructor(
                                 )
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             BOTTOM -> {
                                 bottomScale = (borderRect.bottom - cropRect.top) / cropRect.height()
                                 val minScale =
@@ -1198,6 +1262,7 @@ class CropView @JvmOverloads constructor(
                             }
                         }
                     }
+
                     is DraggingCorner -> {
                         val leftScale = (cropRect.right - borderRect.left) / cropRect.width()
                         val topScale = (cropRect.bottom - borderRect.top) / cropRect.height()
@@ -1210,18 +1275,21 @@ class CropView @JvmOverloads constructor(
                                 matrix.setScale(minScale, minScale, cropRect.left, cropRect.bottom)
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             TOP_LEFT -> {
                                 val minScale = min(leftScale, topScale)
                                 val matrix = Matrix()
                                 matrix.setScale(minScale, minScale, cropRect.right, cropRect.bottom)
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             BOTTOM_RIGHT -> {
                                 val minScale = min(rightScale, bottomScale)
                                 val matrix = Matrix()
                                 matrix.setScale(minScale, minScale, cropRect.left, cropRect.top)
                                 matrix.mapRect(maxRect, cropRect)
                             }
+
                             BOTTOM_LEFT -> {
                                 val minScale = min(leftScale, bottomScale)
                                 val matrix = Matrix()
@@ -1349,16 +1417,19 @@ class CropView @JvmOverloads constructor(
         val heightScale = cropRect.height() / draggedBitmapRect.height()
         var scale = 1.0f
 
-        if (widthScale > 1.0f || heightScale > 1.0f) {
+        Log.i(TAG, "settleDraggedBitmap: widthScale $widthScale heightScale $heightScale")
+        if (widthScale.absoluteValue > 1.0f || heightScale.absoluteValue > 1.0f) {
             scale = max(widthScale, heightScale)
         }
+        val scaleXH = if (hFlip) -scale else scale
+        val scaleYV = if (vFlip) -scale else scale
 
         /**
          * Calculate new scaled matrix for dragged bitmap matrix
          */
         val scaledRect = RectF()
         val scaledMatrix = Matrix()
-        scaledMatrix.setScale(scale, scale)
+        scaledMatrix.setScale(scaleXH, scaleYV)
         scaledMatrix.mapRect(scaledRect, draggedBitmapRect)
 
 
@@ -1367,11 +1438,19 @@ class CropView @JvmOverloads constructor(
          */
         var translateX = 0f
         if (scaledRect.left > cropRect.left) {
-            translateX = cropRect.left - scaledRect.left
+            translateX = if (hFlip) {
+                cropRect.left - scaledRect.right
+            } else {
+                cropRect.left - scaledRect.left
+            }
         }
 
         if (scaledRect.right < cropRect.right) {
-            translateX = cropRect.right - scaledRect.right
+            translateX = if (hFlip) {
+                cropRect.right - scaledRect.left
+            } else {
+                cropRect.right - scaledRect.right
+            }
         }
 
         /**
@@ -1379,11 +1458,19 @@ class CropView @JvmOverloads constructor(
          */
         var translateY = 0f
         if (scaledRect.top > cropRect.top) {
-            translateY = cropRect.top - scaledRect.top
+            translateY = if (hFlip) {
+                cropRect.top - scaledRect.bottom
+            } else {
+                cropRect.top - scaledRect.top
+            }
         }
 
         if (scaledRect.bottom < cropRect.bottom) {
-            translateY = cropRect.bottom - scaledRect.bottom
+            translateY = if (hFlip) {
+                cropRect.bottom - scaledRect.top
+            } else {
+                cropRect.bottom - scaledRect.bottom
+            }
         }
 
         /**
@@ -1392,7 +1479,7 @@ class CropView @JvmOverloads constructor(
         val newBitmapMatrix = bitmapMatrix.clone()
 
         val matrix = Matrix()
-        matrix.setScale(scale, scale)
+        matrix.setScale(scaleXH, scaleYV)
         matrix.postTranslate(translateX, translateY)
         newBitmapMatrix.postConcat(matrix)
 
