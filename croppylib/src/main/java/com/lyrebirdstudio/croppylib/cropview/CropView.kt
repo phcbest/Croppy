@@ -17,6 +17,8 @@ import kotlin.math.max
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.values
+import androidx.core.graphics.withMatrix
 import com.lyrebirdstudio.aspectratiorecyclerviewlib.aspectratio.model.AspectRatio.*
 import com.lyrebirdstudio.croppylib.ui.CroppedBitmapData
 import com.lyrebirdstudio.croppylib.R
@@ -36,6 +38,7 @@ class CropView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
+    private var flipMatrix = Matrix()
     var rotate = 0F
         set(value) {
             field = value
@@ -43,13 +46,15 @@ class CropView @JvmOverloads constructor(
     var hFlip = false
         set(value) {
             field = value
-            bitmapMatrix.postScale(-1f, 1f, cropRect.centerX(), cropRect.centerY())
+            flipMatrix.setScale(
+                if (value) -1f else 1F, 1f, cropRect.centerX(), cropRect.centerY()
+            )
             invalidate()
         }
     var vFlip = false
         set(value) {
             field = value
-            bitmapMatrix.postScale(1f, -1f, cropRect.centerX(), cropRect.centerY())
+            flipMatrix.setScale(1f, if (value) -1f else 1F, cropRect.centerX(), cropRect.centerY())
             invalidate()
         }
 
@@ -391,8 +396,10 @@ class CropView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
 
-        bitmap?.let { bitmap ->
-            canvas?.drawBitmap(bitmap, bitmapMatrix, emptyPaint)
+        canvas?.withMatrix(flipMatrix) {
+            bitmap?.let { bitmap ->
+                canvas.drawBitmap(bitmap, bitmapMatrix, emptyPaint)
+            }
         }
 
         canvas?.save()
@@ -1417,19 +1424,16 @@ class CropView @JvmOverloads constructor(
         val heightScale = cropRect.height() / draggedBitmapRect.height()
         var scale = 1.0f
 
-        Log.i(TAG, "settleDraggedBitmap: widthScale $widthScale heightScale $heightScale")
-        if (widthScale.absoluteValue > 1.0f || heightScale.absoluteValue > 1.0f) {
+        if (widthScale > 1.0f || heightScale > 1.0f) {
             scale = max(widthScale, heightScale)
         }
-        val scaleXH = if (hFlip) -scale else scale
-        val scaleYV = if (vFlip) -scale else scale
 
         /**
          * Calculate new scaled matrix for dragged bitmap matrix
          */
         val scaledRect = RectF()
         val scaledMatrix = Matrix()
-        scaledMatrix.setScale(scaleXH, scaleYV)
+        scaledMatrix.setScale(scale, scale)
         scaledMatrix.mapRect(scaledRect, draggedBitmapRect)
 
 
@@ -1438,19 +1442,11 @@ class CropView @JvmOverloads constructor(
          */
         var translateX = 0f
         if (scaledRect.left > cropRect.left) {
-            translateX = if (hFlip) {
-                cropRect.left - scaledRect.right
-            } else {
-                cropRect.left - scaledRect.left
-            }
+            translateX = cropRect.left - scaledRect.left
         }
 
         if (scaledRect.right < cropRect.right) {
-            translateX = if (hFlip) {
-                cropRect.right - scaledRect.left
-            } else {
-                cropRect.right - scaledRect.right
-            }
+            translateX = cropRect.right - scaledRect.right
         }
 
         /**
@@ -1458,19 +1454,11 @@ class CropView @JvmOverloads constructor(
          */
         var translateY = 0f
         if (scaledRect.top > cropRect.top) {
-            translateY = if (hFlip) {
-                cropRect.top - scaledRect.bottom
-            } else {
-                cropRect.top - scaledRect.top
-            }
+            translateY = cropRect.top - scaledRect.top
         }
 
         if (scaledRect.bottom < cropRect.bottom) {
-            translateY = if (hFlip) {
-                cropRect.bottom - scaledRect.top
-            } else {
-                cropRect.bottom - scaledRect.bottom
-            }
+            translateY = cropRect.bottom - scaledRect.bottom
         }
 
         /**
@@ -1479,7 +1467,7 @@ class CropView @JvmOverloads constructor(
         val newBitmapMatrix = bitmapMatrix.clone()
 
         val matrix = Matrix()
-        matrix.setScale(scaleXH, scaleYV)
+        matrix.setScale(scale, scale)
         matrix.postTranslate(translateX, translateY)
         newBitmapMatrix.postConcat(matrix)
 
